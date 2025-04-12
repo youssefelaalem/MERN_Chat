@@ -3,7 +3,6 @@ import { useEffect } from "react";
 import { useContext } from "react";
 import { UserContext } from "../UserContext";
 import _ from "lodash";
-import axios from "axios";
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 import "../style.css";
@@ -17,6 +16,7 @@ import ArrowLeft from "../assets/icons/ArrowLeft";
 import Contact from "./Contact";
 import Avatar from "./Avatar";
 import { useMediaQuery } from "../useMediaQuery";
+import axiosInstance from "../api/axios";
 export default function Chat({ selectedUserIdFromRoute }) {
   const navigate = useNavigate();
   // const [isMobile, setIsMobile] = useState(false);
@@ -53,7 +53,7 @@ export default function Chat({ selectedUserIdFromRoute }) {
   const onlinePeopleString = JSON.stringify(onlinePeople);
   const fetchUsers = _.debounce(() => {
     try {
-      axios.get("http://localhost:8080/AllUsers/").then((res) => {
+      axiosInstance.get("/AllUsers/").then((res) => {
         const nameOfReciver = res?.data?.AllUsers?.find(
           (user) => user._id == selectedUserId
         );
@@ -198,8 +198,8 @@ export default function Chat({ selectedUserIdFromRoute }) {
   const UniqMessages = _.uniqBy(messages, "_id");
   useEffect(() => {
     if (selectedUserId)
-      axios
-        .get(`http://localhost:8080/messages/${selectedUserId}`)
+      axiosInstance
+        .get(`/messages/${selectedUserId}`)
         .then((response) => {
           setMessages(response?.data?.allMessages);
         });

@@ -1,5 +1,4 @@
 import { useState } from "react";
-import axios from "axios";
 import { useContext } from "react";
 import { UserContext } from "../../UserContext";
 import PropTypes from "prop-types";
@@ -9,6 +8,7 @@ import EyeIcon from "../../assets/icons/EyeIcon";
 import EyeSlashIcon from "../../assets/icons/EyeSlashIcon";
 // import styles from "yet-another-react-lightbox/styles.css";
 import { Link } from "react-router-dom";
+import axiosInstance from "../../api/axios";
 
 export default function RegisterOrLogin({ setErrorMessage }) {
   const [formType, setFormType] = useState("login");
@@ -17,7 +17,7 @@ export default function RegisterOrLogin({ setErrorMessage }) {
   const handleSubmit = async (values, { setSubmitting }) => {
     try {
       const endpoint = formType === "register" ? "register" : "login";
-      const res = await axios.post(`http://localhost:8080/${endpoint}`, values);
+      const res = await axiosInstance.post(`/${endpoint}`, values);
 
       setLoggedInUsername(values.username);
       setId(res.data.id);

@@ -1,12 +1,10 @@
-import React, { useContext, useState } from "react";
+import { useContext, useState } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
-
-import PropTypes from "prop-types";
 import EyeIcon from "../../assets/icons/EyeIcon";
 import EyeSlashIcon from "../../assets/icons/EyeSlashIcon";
-import axios from "axios";
 import { UserContext } from "../../UserContext";
 import { useNavigate } from "react-router-dom";
+import axiosInstance from "../../api/axios";
 
 function ChangePassword(props) {
   const { showSnackbar } = useContext(UserContext);
@@ -15,8 +13,8 @@ function ChangePassword(props) {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const handleSubmit = async (value) => {
     try {
-      const res = await axios
-        .post(`http://localhost:8080/verifyResetCode`, value)
+      const res = await axiosInstance
+        .post(`/verifyResetCode`, value)
         .then(() => {
           showSnackbar("Password Changed Successfully.", "success");
           navigate("/");

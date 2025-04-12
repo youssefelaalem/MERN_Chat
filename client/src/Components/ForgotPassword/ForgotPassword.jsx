@@ -1,17 +1,16 @@
-import React, { useContext } from "react";
-import PropTypes from "prop-types";
-import { Formik, Form, Field, ErrorMessage } from "formik";
+import { useContext } from "react";
+import { Formik, Form, Field } from "formik";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import { UserContext } from "../../UserContext";
+import axiosInstance from "../../api/axios";
 function ForgotPassword(props) {
   const { showSnackbar } = useContext(UserContext);
   const navigate = useNavigate();
   const handleSubmit = async (value) => {
     try {
       if (value.email.length > 0) {
-        const res = await axios
-          .post(`http://localhost:8080/forgetPassword`, value)
+        const res = await axiosInstance
+          .post(`/forgetPassword`, value)
           .then(() => {
             showSnackbar("Email Sent Successfully.", "success");
             navigate("/ChangePassword");

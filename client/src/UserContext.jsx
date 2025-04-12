@@ -1,8 +1,8 @@
-import axios from "axios";
 import { useEffect, useState } from "react";
 import { createContext } from "react";
 import PropTypes from "prop-types";
 import Snackbar from "./Components/Snackbar"; // Import the Snackbar component
+import axiosInstance from "./api/axios";
 
 export const UserContext = createContext({});
 
@@ -22,8 +22,8 @@ export function UserContextProvider({ children }) {
   };
 
   useEffect(() => {
-    axios
-      .get("http://localhost:8080/profile")
+    axiosInstance
+      .get("/profile")
       .then((response) => {
         setId(response.data.userId);
         setUsername(response.data.username);

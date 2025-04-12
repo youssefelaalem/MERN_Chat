@@ -5,9 +5,9 @@ import "../style.css";
 import Logo from "./Logo";
 import { useNavigate } from "react-router-dom";
 import { UserContext } from "../UserContext";
-import axios from "axios";
 import LogOutIcon from "../assets/icons/LogOutIcon";
 import UserIcon from "../assets/icons/UserIcon";
+import axiosInstance from "../api/axios";
 function OnlineAndOfflineUsers({
   onlinePeopleExclOurUser,
   setSelectedUserName,
@@ -32,7 +32,7 @@ function OnlineAndOfflineUsers({
 
   const { username, id, setId, setUsername } = useContext(UserContext);
   function logOutFun() {
-    axios.post("http://localhost:8080/logout/").then(() => {
+    axiosInstance.post("/logout/").then(() => {
       setWs(null);
       setId(null);
       setUsername(null);
