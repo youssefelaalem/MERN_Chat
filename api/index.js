@@ -12,15 +12,17 @@ const MessageModel = require("./models/Messagemodel");
 const verifyToken = require("./utils/verifyToken");
 require("dotenv").config();
 console.log(" process.env.REMOTE_CLEINT_URL", process.env.REMOTE_CLIENT_URL);
+const fs = require('fs');
 
 app.use(express.json()); //to receive json from the body
 app.use(cookieParser());
 
 // CORS configuration
 const allowedOrigins = [
-  "http://localhost:5173", // Remove trailing slash
+  "http://localhost:5173",
+  "https://mern-chat-theta.vercel.app",
   process.env.REMOTE_CLIENT_URL,
-  process.env.LOCAL_CLIENT_URL,
+  process.env.LOCAL_CLIENT_URL
 ].filter(Boolean); // Remove any undefined/null values
 
 app.use(
@@ -28,17 +30,17 @@ app.use(
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
-
+      
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        console.log("Blocked CORS request from:", origin);
-        callback(new Error("Not allowed by CORS"));
+        console.log('Blocked CORS request from:', origin);
+        callback(new Error('Not allowed by CORS'));
       }
     },
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
   })
 );
 
@@ -91,12 +93,15 @@ app.all("*", (req, res, next) => {
   });
 });
 
-const server = app.listen(process.env.PORT, (req, res) => {
-  console.log(`listening on 
-    http://localhost:${process.env.PORT}`);
-});
+// Create HTTPS server for production
+const server = process.env.NODE_ENV === 'production'
+  ? require('https').createServer({
+      key: fs.readFileSync(process.env.SSL_KEY_PATH),
+      cert: fs.readFileSync(process.env.SSL_CERT_PATH)
+    }, app)
+  : app.listen(process.env.PORT);
 
-const wss = new ws.WebSocketServer({ server: server });
+const wss = new ws.WebSocketServer({ server });
 
 wss.on("connection", async (connection, req) => {
   // Notify all clients about online users
