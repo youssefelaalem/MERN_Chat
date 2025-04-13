@@ -9,4 +9,7 @@ route.get("/profile", usersController.profileFUN);
 route.get("/AllUsers", usersController.getAllUsersFUN);
 route.route("/forgetPassword").post(usersController.forgetPasswordFUN);
 route.route("/verifyResetCode").post(usersController.verifyResetCodeFUN);
+// route.route("/refresh-token").post(usersController.refreshTokenFUN);
+route.route("/ws-refresh-token").post(usersController.wsRefreshTokenFUN);
+module.exports = route;
 module.exports = route;

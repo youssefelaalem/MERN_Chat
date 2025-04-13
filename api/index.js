@@ -9,6 +9,7 @@ const messageRoute = require("./routes/messageRoute");
 const ws = require("ws");
 const jwt = require("jsonwebtoken");
 const MessageModel = require("./models/Messagemodel");
+const verifyToken = require("./utils/verifyToken");
 require("dotenv").config();
 console.log(" process.env.REMOTE_CLEINT_URL", process.env.REMOTE_CLIENT_URL);
 
@@ -97,7 +98,26 @@ const server = app.listen(process.env.PORT, (req, res) => {
 
 const wss = new ws.WebSocketServer({ server: server });
 
-wss.on("connection", (connection, req) => {
+wss.on("connection", async (connection, req) => {
+  // Notify all clients about online users
+  const notifyOnlineUsers = _.throttle(() => {
+    const onlineUsers = [...wss.clients]
+      .filter(client => client.readyState === ws.OPEN && client.userId)
+      .map(client => ({
+        userId: client.userId,
+        username: client.username
+      }));
+
+    [...wss.clients].forEach(client => {
+      if (client.readyState === ws.OPEN) {
+        client.send(JSON.stringify({
+          online: onlineUsers
+        }));
+      }
+    });
+  }, 1000);
+
+  // Set up connection health check
   connection.isAlive = true;
   connection.timer = setInterval(() => {
     connection.ping();
@@ -106,92 +126,125 @@ wss.on("connection", (connection, req) => {
       clearInterval(connection.timer);
       connection.terminate();
       notifyOnlineUsers();
-      console.log("destroy");
     }, 1000);
   }, 5000);
+
   connection.on("pong", () => {
     clearTimeout(connection.deathTimer);
   });
+
+  // Handle token verification and refresh
+  const verifyAndRefreshToken = async (token) => {
+    try {
+      const userData = await verifyToken(token);
+      connection.userId = userData.userId;
+      connection.username = userData.username;
+      return true;
+    } catch (error) {
+      if (error.type === "expired") {
+        try {
+          // Attempt to refresh the token
+          const response = await fetch(`${process.env.CLIENT_URL}/api/ws-refresh-token`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              'Cookie': req.headers.cookie
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            const newToken = data.token;
+            // Update the connection's token
+            connection.token = newToken;
+            const userData = await verifyToken(newToken);
+            connection.userId = userData.userId;
+            connection.username = userData.username;
+            return true;
+          }
+        } catch (refreshError) {
+          console.error("Token refresh failed:", refreshError);
+        }
+      }
+      return false;
+    }
+  };
+
+  // Handle token verification
   const cookies = req.headers.cookie;
   if (cookies) {
     const tokenCookieString = cookies
       .split(";")
-      .find((str) => str.trim().startsWith("token=")); // Trim to avoid space issues
+      .find((str) => str.trim().startsWith("token="));
 
     if (tokenCookieString) {
       const token = tokenCookieString.split("=")[1];
       if (token) {
-        jwt.verify(token, process.env.JWT_SECRET_KEY, {}, (err, userData) => {
-          if (err) {
-            console.error("JWT Verification Error:", err);
-            return;
-          }
-
-          connection.userId = userData.userId;
-          connection.username = userData.username;
-        });
+        const isValid = await verifyAndRefreshToken(token);
+        if (!isValid) {
+          connection.close(4001, "Token verification failed");
+          return;
+        }
+      } else {
+        connection.close(4001, "No token provided");
+        return;
       }
+    } else {
+      connection.close(4001, "No cookies provided");
+      return;
     }
+  } else {
+    connection.close(4001, "No cookies provided");
+    return;
   }
-  // Notify all clients after setting user details
-  const notifyOnlineUsers = _.throttle(() => {
-    [...wss.clients].forEach((client) => {
-      client.send(
-        JSON.stringify({
-          online: [...wss.clients].map((c) => ({
-            userId: c.userId || null,
-            username: c.username || "UnKnown",
-          })),
-        })
-      );
-    });
-  }, 1000); // Send updates at most once per second
+
+  // Initial notification
   notifyOnlineUsers();
-  // function notifyOnlineUsers() {
-  //   [...wss.clients].forEach((client) => {
-  //     client.send(
-  //       JSON.stringify({
-  //         online: [...wss.clients].map((c) => ({
-  //           userId: c.userId || null, // Ensure null instead of undefined
-  //           username: c.username || "Unknown",
-  //         })),
-  //       })
-  //     );
-  //   });
-  // }
 
   // Handle incoming messages
   connection.on("message", async (message) => {
     try {
       const messageData = JSON.parse(message.toString());
       const { recipient, text, fileUrl, fileMetadata } = messageData;
+      
       if (recipient && (text || fileUrl)) {
         const messageDoc = await MessageModel.create({
           sender: connection.userId,
-          fileUrl,
           recipient,
           text,
-          fileMetadata,
+          fileUrl,
+          fileMetadata
         });
 
+        // Send message to recipient if they're online
         [...wss.clients]
-          .filter((client) => client.userId === recipient)
-          .forEach((client) =>
-            client.send(
-              JSON.stringify({
-                fileUrl,
-                fileMetadata,
-                text,
-                createdAt: messageDoc.createdAt,
-                sender: connection.userId,
-                recipient,
-                _id: messageDoc._id,
-              })
-            )
-          );
+          .filter(client => client.userId === recipient && client.readyState === ws.OPEN)
+          .forEach(client => {
+            client.send(JSON.stringify({
+              text,
+              sender: connection.userId,
+              recipient,
+              fileUrl,
+              fileMetadata,
+              _id: messageDoc._id,
+              createdAt: messageDoc.createdAt
+            }));
+          });
       }
     } catch (error) {
-      console.error("Message Handling Error:", error);
+      console.error("Error handling message:", error);
     }
+  });
+
+  // Handle connection close
+  connection.on("close", () => {
+    clearInterval(connection.timer);
+    notifyOnlineUsers();
+  });
+
+  // Handle errors
+  connection.on("error", (error) => {
+    console.error("WebSocket error:", error);
+    connection.close();
   });
 });

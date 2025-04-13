@@ -15,7 +15,9 @@ const registerFUN = asyncHandler(async (req, res, next) => {
   console.log("sss", user);
 
   if (user) {
-    return next(appError.create("The Email Is Usedss.", 400, httpStatusText.FAIL));
+    return next(
+      appError.create("The Email Is Usedss.", 400, httpStatusText.FAIL)
+    );
   }
   if (!validator.isEmail(email)) {
     return next(
@@ -112,13 +114,24 @@ const logOutFUN = (req, res) => {
     .cookie("token", "", { sameSite: "none", secure: true })
     .json("successfully logout");
 };
-const profileFUN = asyncHandler((req, res) => {
+const profileFUN = asyncHandler(async (req, res) => {
   const token = req.cookies?.token;
   if (token) {
-    JWT.verify(token, process.env.JWT_SECRET_KEY, {}, (err, userData) => {
-      if (err) throw err;
-      res.json(userData);
-    });
+    const verifyToken = (token) =>
+      new Promise((resolve, reject) => {
+        JWT.verify(token, process.env.JWT_SECRET_KEY, {}, (err, data) => {
+          if (err) {
+            if (err.name === "TokenExpiredError") {
+              return reject({ type: "expired", message: err.message });
+            }
+            return reject({ type: "invalid", message: err.message });
+          }
+          resolve(data);
+        });
+      });
+    const userData = await verifyToken(token);
+    console.log("userData", userData);
+    res.json(userData);
   } else {
     res.status(401).json("no token found");
   }
@@ -301,6 +314,55 @@ const verifyResetCodeFUN = asyncHandler(async (req, res, next) => {
     next(appError.create("Password reset failed", 500));
   }
 });
+const wsRefreshTokenFUN = async (req, res) => {
+  try {
+    const { refreshToken } = req.cookies;
+
+    if (!refreshToken) {
+      return res.status(401).json({
+        status: "error",
+        message: "No refresh token provided",
+      });
+    }
+
+    const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET_KEY);
+    const user = await UserModel.findById(decoded.userId);
+
+    if (!user) {
+      return res.status(401).json({
+        status: "error",
+        message: "User not found",
+      });
+    }
+
+    // Generate new access token with longer expiration for WebSocket
+    const token = jwt.sign(
+      { userId: user._id, username: user.username },
+      process.env.JWT_SECRET_KEY,
+      { expiresIn: "24h" } // Longer expiration for WebSocket
+    );
+
+    // Set the new token in cookies
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    });
+
+    res.status(200).json({
+      status: "success",
+      message: "WebSocket token refreshed successfully",
+      token,
+    });
+  } catch (error) {
+    console.error("WebSocket token refresh error:", error);
+    res.status(401).json({
+      status: "error",
+      message: "Invalid refresh token",
+    });
+  }
+};
 module.exports = {
   profileFUN,
   registerFUN,
@@ -309,4 +371,5 @@ module.exports = {
   getAllUsersFUN,
   forgetPasswordFUN,
   verifyResetCodeFUN,
+  wsRefreshTokenFUN,
 };
