@@ -16,10 +16,15 @@ app.use(express.json()); //to receive json from the body
 app.use(cookieParser());
 //for test
 // app.options("*", cors());
-app.use(
-  cors({ origin: "mern-chat-theta.vercel.app", credentials: true })
-);
+app.use(cors({ origin: "mern-chat-theta.vercel.app", credentials: true }));
 
+app.get("/hello:name", (res, req) => {
+  const name = req.get("name");
+  res.status(200).json({
+    status: "Ok",
+    message: `Hello ${name}`,
+  });
+});
 // app.use(
 //   cors({
 //     origin: process.env.REMOTE_CLIENT_URL,
