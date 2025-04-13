@@ -82,7 +82,7 @@ export default function Chat({ selectedUserIdFromRoute }) {
     connectionWS();
   }, [selectedUserId]);
   function connectionWS() {
-    const ws = new WebSocket("ws://mernchat-production-815e.up.railway.app/");
+    const ws = new WebSocket("ws://mernchat-production-815e.up.railway.app");
     setWs(ws);
     ws.addEventListener("message", handleMessage);
     // for reconnection
