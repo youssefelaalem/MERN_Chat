@@ -82,35 +82,16 @@ export default function Chat({ selectedUserIdFromRoute }) {
     connectionWS();
   }, [selectedUserId]);
   function connectionWS() {
-    // Determine WebSocket URL based on environment
-    const wsUrl = import.meta.env.VITE_BACKEND_URL
-      ? import.meta.env.VITE_BACKEND_URL.replace(/^http/, 'ws')
-      : window.location.protocol === 'https:'
-        ? 'wss://mernchat-production-815e.up.railway.app'
-        : 'ws://localhost:8080';
-
-    const ws = new WebSocket(wsUrl);
+    // const ws = new WebSocket("ws://localhost:8080");
+    const ws = new WebSocket("wss://mernchat-production-815e.up.railway.app");
     setWs(ws);
-
     ws.addEventListener("message", handleMessage);
-    
-    // Handle connection errors
-    ws.addEventListener("error", (error) => {
-      console.error("WebSocket error:", error);
-    });
-
-    // Handle connection close with reconnection logic
-    ws.addEventListener("close", (event) => {
-      console.log("WebSocket closed with code:", event.code);
-      
-      // Only reconnect if it's not a normal closure
-      if (event.code !== 1000) {
-        setTimeout(() => {
-          console.log("Attempting to reconnect...");
-          connectionWS();
-        }, 800);
-      }
-    });
+    // for reconnection
+    ws.addEventListener("close", () =>
+      setTimeout(() => {
+        connectionWS();
+      }, 800)
+    );
   }
   function showOnlinePeople(peopleArray) {
     const people = peopleArray.reduce((acc, { userId, username }) => {
@@ -218,9 +199,11 @@ export default function Chat({ selectedUserIdFromRoute }) {
   const UniqMessages = _.uniqBy(messages, "_id");
   useEffect(() => {
     if (selectedUserId)
-      axiosInstance.get(`/messages/${selectedUserId}`).then((response) => {
-        setMessages(response?.data?.allMessages);
-      });
+      axiosInstance
+        .get(`/messages/${selectedUserId}`)
+        .then((response) => {
+          setMessages(response?.data?.allMessages);
+        });
   }, [selectedUserId]);
 
   async function uploadingFilesChange(e) {

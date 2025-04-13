@@ -12,17 +12,14 @@ const MessageModel = require("./models/Messagemodel");
 const verifyToken = require("./utils/verifyToken");
 require("dotenv").config();
 console.log(" process.env.REMOTE_CLEINT_URL", process.env.REMOTE_CLIENT_URL);
-const fs = require('fs');
 
 app.use(express.json()); //to receive json from the body
 app.use(cookieParser());
 
 // CORS configuration
 const allowedOrigins = [
-  "http://localhost:5173",
+  "http://localhost:5173", // Remove trailing slash
   "https://mern-chat-theta.vercel.app",
-  process.env.REMOTE_CLIENT_URL,
-  process.env.LOCAL_CLIENT_URL
 ].filter(Boolean); // Remove any undefined/null values
 
 app.use(
@@ -30,17 +27,17 @@ app.use(
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
-      
+
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        console.log('Blocked CORS request from:', origin);
-        callback(new Error('Not allowed by CORS'));
+        console.log("Blocked CORS request from:", origin);
+        callback(new Error("Not allowed by CORS"));
       }
     },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   })
 );
 
@@ -93,31 +90,30 @@ app.all("*", (req, res, next) => {
   });
 });
 
-// Create HTTPS server for production
-const server = process.env.NODE_ENV === 'production'
-  ? require('https').createServer({
-      key: fs.readFileSync(process.env.SSL_KEY_PATH),
-      cert: fs.readFileSync(process.env.SSL_CERT_PATH)
-    }, app)
-  : app.listen(process.env.PORT);
+const server = app.listen(process.env.PORT, (req, res) => {
+  console.log(`listening on 
+    http://localhost:${process.env.PORT}`);
+});
 
-const wss = new ws.WebSocketServer({ server });
+const wss = new ws.WebSocketServer({ server: server });
 
 wss.on("connection", async (connection, req) => {
   // Notify all clients about online users
   const notifyOnlineUsers = _.throttle(() => {
     const onlineUsers = [...wss.clients]
-      .filter(client => client.readyState === ws.OPEN && client.userId)
-      .map(client => ({
+      .filter((client) => client.readyState === ws.OPEN && client.userId)
+      .map((client) => ({
         userId: client.userId,
-        username: client.username
+        username: client.username,
       }));
 
-    [...wss.clients].forEach(client => {
+    [...wss.clients].forEach((client) => {
       if (client.readyState === ws.OPEN) {
-        client.send(JSON.stringify({
-          online: onlineUsers
-        }));
+        client.send(
+          JSON.stringify({
+            online: onlineUsers,
+          })
+        );
       }
     });
   }, 1000);
@@ -138,43 +134,6 @@ wss.on("connection", async (connection, req) => {
     clearTimeout(connection.deathTimer);
   });
 
-  // Handle token verification and refresh
-  const verifyAndRefreshToken = async (token) => {
-    try {
-      const userData = await verifyToken(token);
-      connection.userId = userData.userId;
-      connection.username = userData.username;
-      return true;
-    } catch (error) {
-      if (error.type === "expired") {
-        try {
-          // Attempt to refresh the token
-          const response = await fetch(`${process.env.CLIENT_URL}/api/ws-refresh-token`, {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-              'Cookie': req.headers.cookie
-            }
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            const newToken = data.token;
-            // Update the connection's token
-            connection.token = newToken;
-            const userData = await verifyToken(newToken);
-            connection.userId = userData.userId;
-            connection.username = userData.username;
-            return true;
-          }
-        } catch (refreshError) {
-          console.error("Token refresh failed:", refreshError);
-        }
-      }
-      return false;
-    }
-  };
-
   // Handle token verification
   const cookies = req.headers.cookie;
   if (cookies) {
@@ -185,8 +144,12 @@ wss.on("connection", async (connection, req) => {
     if (tokenCookieString) {
       const token = tokenCookieString.split("=")[1];
       if (token) {
-        const isValid = await verifyAndRefreshToken(token);
-        if (!isValid) {
+        try {
+          const userData = await verifyToken(token);
+          connection.userId = userData.userId;
+          connection.username = userData.username;
+        } catch (error) {
+          console.error("WebSocket token verification error:", error);
           connection.close(4001, "Token verification failed");
           return;
         }
@@ -211,29 +174,34 @@ wss.on("connection", async (connection, req) => {
     try {
       const messageData = JSON.parse(message.toString());
       const { recipient, text, fileUrl, fileMetadata } = messageData;
-      
+
       if (recipient && (text || fileUrl)) {
         const messageDoc = await MessageModel.create({
           sender: connection.userId,
           recipient,
           text,
           fileUrl,
-          fileMetadata
+          fileMetadata,
         });
 
         // Send message to recipient if they're online
         [...wss.clients]
-          .filter(client => client.userId === recipient && client.readyState === ws.OPEN)
-          .forEach(client => {
-            client.send(JSON.stringify({
-              text,
-              sender: connection.userId,
-              recipient,
-              fileUrl,
-              fileMetadata,
-              _id: messageDoc._id,
-              createdAt: messageDoc.createdAt
-            }));
+          .filter(
+            (client) =>
+              client.userId === recipient && client.readyState === ws.OPEN
+          )
+          .forEach((client) => {
+            client.send(
+              JSON.stringify({
+                text,
+                sender: connection.userId,
+                recipient,
+                fileUrl,
+                fileMetadata,
+                _id: messageDoc._id,
+                createdAt: messageDoc.createdAt,
+              })
+            );
           });
       }
     } catch (error) {
