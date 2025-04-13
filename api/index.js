@@ -75,7 +75,7 @@ app.use(function (err, req, res, next) {
   });
 });
 app.get("/hello:name", (req, res) => {
-  console.log("ree", req);
+  // console.log("ree", req);
   const { name } = req.params;
   res.status(200).json({
     status: "Ok",
