@@ -14,17 +14,44 @@ console.log(" process.env.REMOTE_CLEINT_URL", process.env.REMOTE_CLIENT_URL);
 
 app.use(express.json()); //to receive json from the body
 app.use(cookieParser());
-//for test 
-app.options("*", cors());
-app.use(cors({ origin: true, credentials: true }));
-// app.use(
-//   cors({
-//     origin: process.env.REMOTE_CLIENT_URL,
-//     methods: ["GET", "POST", "PUT", "DELETE"],
-//     credentials: true,
-//     allowedHeaders: ["Content-Type", "Authorization"], // Add 'Authorization' if necessary
-//   })
-// );
+
+// CORS configuration
+const allowedOrigins = [
+  "http://localhost:5173",  // Remove trailing slash
+  process.env.REMOTE_CLIENT_URL,
+  process.env.LOCAL_CLIENT_URL
+].filter(Boolean); // Remove any undefined/null values
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.log('Blocked CORS request from:', origin);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  })
+);
+
+// Error handling for CORS
+app.use((err, req, res, next) => {
+  if (err.message === 'Not allowed by CORS') {
+    res.status(403).json({
+      status: 'error',
+      message: 'CORS policy: Request not allowed'
+    });
+  } else {
+    next(err);
+  }
+});
 
 app.use("/", userRoute);
 app.use("/", messageRoute);
