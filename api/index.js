@@ -10,15 +10,27 @@ const ws = require("ws");
 const jwt = require("jsonwebtoken");
 const MessageModel = require("./models/Messagemodel");
 require("dotenv").config();
+console.log(" process.env.REMOTE_CLEINT_URL", process.env.REMOTE_CLEINT_URL);
 
 app.use(express.json()); //to receive json from the body
 app.use(cookieParser()); //
 app.use(
   cors({
-    origin: process.env.REMOTE_CLEINT_URL,
+    origin: (origin, callback) => {
+      const allowedOrigins = [
+        process.env.REMOTE_CLIENT_URL,
+        "http://localhost:3000" // Add local development URL
+      ];
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
-    allowedHeaders: ["Content-Type", "Authorization"], // Add 'Authorization' if necessary
+    allowedHeaders: ["Content-Type", "Authorization"],
+    exposedHeaders: ["Set-Cookie"] // Explicitly expose Set-Cookie header
   })
 );
 
