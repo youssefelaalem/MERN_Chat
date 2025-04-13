@@ -82,7 +82,7 @@ export default function Chat({ selectedUserIdFromRoute }) {
     connectionWS();
   }, [selectedUserId]);
   function connectionWS() {
-    const ws = new WebSocket("ws://localhost:8080");
+    const ws = new WebSocket("ws://mernchat-production-815e.up.railway.app/");
     setWs(ws);
     ws.addEventListener("message", handleMessage);
     // for reconnection
@@ -198,11 +198,9 @@ export default function Chat({ selectedUserIdFromRoute }) {
   const UniqMessages = _.uniqBy(messages, "_id");
   useEffect(() => {
     if (selectedUserId)
-      axiosInstance
-        .get(`/messages/${selectedUserId}`)
-        .then((response) => {
-          setMessages(response?.data?.allMessages);
-        });
+      axiosInstance.get(`/messages/${selectedUserId}`).then((response) => {
+        setMessages(response?.data?.allMessages);
+      });
   }, [selectedUserId]);
 
   async function uploadingFilesChange(e) {
