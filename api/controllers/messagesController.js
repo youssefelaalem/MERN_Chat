@@ -31,11 +31,11 @@ const retriveAllMessages = asyncHandler(async (req, res) => {
 
   // Check if user is authenticated
   if (!userData) {
-    return res.status(401).json({ error: "User not authenticated" });
+    return res.status(401).json({ error: "User not authenticated issue with userData obj" });
   }
   const currentUserId = userData.userId;
   if (!currentUserId) {
-    return res.status(401).json({ error: "User not authenticated" });
+    return res.status(401).json({ error: "User not authenticated issue wiht id" });
   }
 
   // Query the messages ensuring both ids are valid ObjectIds

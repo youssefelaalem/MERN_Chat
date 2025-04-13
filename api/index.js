@@ -156,15 +156,15 @@ wss.on("connection", async (connection, req) => {
           return;
         }
       } else {
-        connection.close(4001, "No token provided");
+        connection.close(401, "No token provided");
         return;
       }
     } else {
-      connection.close(4001, "No cookies provided");
+      connection.close(401, "No cookies provided");
       return;
     }
   } else {
-    connection.close(4001, "No cookies provided");
+    connection.close(401, "No cookies provided");
     return;
   }
 
