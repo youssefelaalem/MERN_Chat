@@ -146,6 +146,8 @@ wss.on("connection", async (connection, req) => {
       if (token) {
         try {
           const userData = await verifyToken(token);
+          console.log("userData", userData);
+
           connection.userId = userData.userId;
           connection.username = userData.username;
         } catch (error) {

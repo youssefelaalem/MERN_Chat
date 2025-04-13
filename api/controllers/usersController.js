@@ -130,7 +130,7 @@ const profileFUN = asyncHandler(async (req, res) => {
         });
       });
     const userData = await verifyToken(token);
-    console.log("userData", userData);
+    console.log("userData at profile", userData);
     res.json(userData);
   } else {
     res.status(401).json("no token found");
