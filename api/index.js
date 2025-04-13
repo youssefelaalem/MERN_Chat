@@ -16,15 +16,8 @@ app.use(express.json()); //to receive json from the body
 app.use(cookieParser());
 //for test
 // app.options("*", cors());
-app.use(cors({ origin: "mern-chat-theta.vercel.app", credentials: true }));
+app.use(cors({ origin: process.env.REMOTE_CLIENT_URL, credentials: true }));
 
-app.get("/hello:name", (res, req) => {
-  const name = req.get("name");
-  res.status(200).json({
-    status: "Ok",
-    message: `Hello ${name}`,
-  });
-});
 // app.use(
 //   cors({
 //     origin: process.env.REMOTE_CLIENT_URL,
@@ -55,7 +48,14 @@ app.use(function (err, req, res, next) {
     message: message,
   });
 });
-
+app.get("/hello:name", (req, res) => {
+  console.log("ree", req);
+  const {name} = req.params;
+  res.status(200).json({
+    status: "Ok",
+    message: `Hello ${name}`,
+  });
+});
 //to handle all another routes
 app.all("*", (req, res, next) => {
   res.status(404).json({

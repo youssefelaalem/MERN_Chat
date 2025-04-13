@@ -17,6 +17,8 @@ export default function RegisterOrLogin({ setErrorMessage }) {
   const handleSubmit = async (values, { setSubmitting }) => {
     try {
       const endpoint = formType === "register" ? "register" : "login";
+      const resss = await axiosInstance.get(`/hello:Youssef`);
+      console.log("test hello", resss);
       const res = await axiosInstance.post(`/${endpoint}`, values);
 
       setLoggedInUsername(values.username);
