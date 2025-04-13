@@ -13,26 +13,18 @@ require("dotenv").config();
 console.log(" process.env.REMOTE_CLEINT_URL", process.env.REMOTE_CLIENT_URL);
 
 app.use(express.json()); //to receive json from the body
-app.use(cookieParser()); //
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      const allowedOrigins = [
-        "https://mern-chat-theta.vercel.app/",
-        "http://localhost:5173", //local development URL
-      ];
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true,
-    allowedHeaders: ["Content-Type", "Authorization"],
-    exposedHeaders: ["Set-Cookie"], // Explicitly expose Set-Cookie header
-  })
-);
+app.use(cookieParser());
+//for test 
+app.options("*", cors());
+app.use(cors({ origin: true, credentials: true }));
+// app.use(
+//   cors({
+//     origin: process.env.REMOTE_CLIENT_URL,
+//     methods: ["GET", "POST", "PUT", "DELETE"],
+//     credentials: true,
+//     allowedHeaders: ["Content-Type", "Authorization"], // Add 'Authorization' if necessary
+//   })
+// );
 
 app.use("/", userRoute);
 app.use("/", messageRoute);
