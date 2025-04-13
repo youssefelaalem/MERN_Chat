@@ -15,9 +15,9 @@ console.log(" process.env.REMOTE_CLEINT_URL", process.env.REMOTE_CLIENT_URL);
 app.use(express.json()); //to receive json from the body
 app.use(cookieParser());
 //for test
-app.options("*", cors());
+// app.options("*", cors());
 app.use(
-  cors({ origin: "https://mern-chat-theta.vercel.app", credentials: true })
+  cors({ origin: "mern-chat-theta.vercel.app", credentials: true })
 );
 
 // app.use(
