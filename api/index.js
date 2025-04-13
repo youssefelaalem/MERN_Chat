@@ -10,7 +10,7 @@ const ws = require("ws");
 const jwt = require("jsonwebtoken");
 const MessageModel = require("./models/Messagemodel");
 require("dotenv").config();
-console.log(" process.env.REMOTE_CLEINT_URL", process.env.REMOTE_CLEINT_URL);
+console.log(" process.env.REMOTE_CLEINT_URL", process.env.REMOTE_CLIENT_URL);
 
 app.use(express.json()); //to receive json from the body
 app.use(cookieParser()); //
@@ -18,8 +18,8 @@ app.use(
   cors({
     origin: (origin, callback) => {
       const allowedOrigins = [
-        process.env.REMOTE_CLIENT_URL,
-        "http://localhost:5173" // Add local development URL
+        "https://mern-chat-theta.vercel.app/",
+        "http://localhost:5173", //local development URL
       ];
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
@@ -30,7 +30,7 @@ app.use(
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
-    exposedHeaders: ["Set-Cookie"] // Explicitly expose Set-Cookie header
+    exposedHeaders: ["Set-Cookie"], // Explicitly expose Set-Cookie header
   })
 );
 
