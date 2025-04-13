@@ -19,7 +19,7 @@ app.use(
     origin: (origin, callback) => {
       const allowedOrigins = [
         process.env.REMOTE_CLIENT_URL,
-        "http://localhost:3000" // Add local development URL
+        "http://localhost:5173" // Add local development URL
       ];
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
