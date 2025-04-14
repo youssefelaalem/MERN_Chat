@@ -4,17 +4,25 @@ const MessageModel = require("../models/Messagemodel");
 
 const getCurrentUserInfo = (req) => {
   return new Promise((resolve, reject) => {
-    const token = req?.cookies?.token;
+    // Try to get token from cookies first
+    let token = req?.cookies?.token;
+    
+    // If not found in cookies, check Authorization header (for production)
+    if (!token && req.headers.authorization?.startsWith('Bearer ')) {
+      token = req.headers.authorization.split(' ')[1];
+    }
+    
     if (token) {
       JWT.verify(token, process.env.JWT_SECRET_KEY, (err, userData) => {
         if (err) {
-          console.error("JWT Verification Error:", err);
+          console.error('JWT Verification Error:', err);
           return reject(err);
         }
+        console.log('Decoded userData:', userData); // Debug logging
         resolve(userData);
       });
     } else {
-      // No token provided
+      console.log('No token found in request'); // Debug logging
       resolve(null);
     }
   });

@@ -85,7 +85,10 @@ const registerFUN = asyncHandler(async (req, res, next) => {
     userId: newUser._id,
     username: newUser.username,
   });
-  return res.cookie("token", token).status(201).json({ id: newUser._id });
+  return res
+    .cookie("token", token)
+    .status(201)
+    .json({ id: newUser._id, token });
 });
 
 const loginFUN = asyncHandler(async (req, res, next) => {
@@ -106,7 +109,7 @@ const loginFUN = asyncHandler(async (req, res, next) => {
   return res
     .cookie("token", token, { httpOnly: true, secure: true })
     .status(201)
-    .json({ id: user._id });
+    .json({ id: user._id, token });
   // res.status(200).json({ status: "success", Data: user, token: token });
 });
 const logOutFUN = (req, res) => {

@@ -36,6 +36,7 @@ function OnlineAndOfflineUsers({
       setWs(null);
       setId(null);
       setUsername(null);
+      localStorage.removeItem("token");
     });
   }
   return (
