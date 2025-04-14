@@ -96,8 +96,12 @@ const server = app.listen(process.env.PORT, (req, res) => {
 });
 
 const wss = new ws.WebSocketServer({ server: server });
-
+const MAX_WS_CONNECTIONS = 100; 
 wss.on("connection", async (connection, req) => {
+  if (wss.clients.size >= MAX_WS_CONNECTIONS) {
+    connection.close(1008, "Server overloaded");
+    return;
+  }
   // Notify all clients about online users
   const notifyOnlineUsers = _.throttle(() => {
     const onlineUsers = [...wss.clients]
