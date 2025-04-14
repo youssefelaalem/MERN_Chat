@@ -136,35 +136,36 @@ wss.on("connection", async (connection, req) => {
 
   // Handle token verification
   const cookies = req.headers.cookie;
-  if (cookies) {
+  const authHeader = req.headers.authorization;
+
+  let token;
+
+  // Check Authorization header first (for production)
+  if (authHeader?.startsWith("Bearer ")) {
+    token = authHeader.split(" ")[1];
+  } 
+  // Fall back to cookies (for local development)
+  else if (cookies) {
     const tokenCookieString = cookies
       .split(";")
       .find((str) => str.trim().startsWith("token="));
+    token = tokenCookieString?.split("=")[1];
+  }
 
-    if (tokenCookieString) {
-      const token = tokenCookieString.split("=")[1];
-      if (token) {
-        try {
-          const userData = await verifyToken(token);
-          console.log("userData", userData);
+  if (token) {
+    try {
+      const userData = await verifyToken(token);
+      console.log("WebSocket user authenticated:", userData.userId);
 
-          connection.userId = userData.userId;
-          connection.username = userData.username;
-        } catch (error) {
-          console.error("WebSocket token verification error:", error);
-          connection.close(4001, "Token verification failed");
-          return;
-        }
-      } else {
-        connection.close(401, "No token provided");
-        return;
-      }
-    } else {
-      connection.close(1008, "No cookies provided");
+      connection.userId = userData.userId;
+      connection.username = userData.username;
+    } catch (error) {
+      console.error("WebSocket token verification error:", error);
+      connection.close(1008, "Token verification failed"); // WebSocket status code
       return;
     }
   } else {
-    connection.close(1008, "No cookies provided");
+    connection.close(1008, "No token provided"); // WebSocket status code
     return;
   }
 
