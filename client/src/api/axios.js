@@ -5,7 +5,7 @@ const axiosInstance = axios.create({
   withCredentials: true, // For local development (cookies)
 });
 
-// Add token to headers if it exists in storage
+// Add token to headers if it exists in storage 
 axiosInstance.interceptors.request.use((config) => {
   const token =
     localStorage.getItem("token") || sessionStorage.getItem("token");
