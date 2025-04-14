@@ -160,11 +160,11 @@ wss.on("connection", async (connection, req) => {
         return;
       }
     } else {
-      connection.close(401, "No cookies provided");
+      connection.close(1008, "No cookies provided");
       return;
     }
   } else {
-    connection.close(401, "No cookies provided");
+    connection.close(1008, "No cookies provided");
     return;
   }
 
@@ -220,6 +220,6 @@ wss.on("connection", async (connection, req) => {
   // Handle errors
   connection.on("error", (error) => {
     console.error("WebSocket error:", error);
-    connection.close();
+    connection.close(1011, "Internal error");
   });
 });
