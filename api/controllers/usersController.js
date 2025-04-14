@@ -104,7 +104,7 @@ const loginFUN = asyncHandler(async (req, res, next) => {
   });
 
   return res
-    .cookie("token", token, { httpOnly: true, secure: false })
+    .cookie("token", token, { httpOnly: true, secure: true })
     .status(201)
     .json({ id: user._id });
   // res.status(200).json({ status: "success", Data: user, token: token });
