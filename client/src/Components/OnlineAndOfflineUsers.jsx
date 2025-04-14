@@ -36,7 +36,7 @@ function OnlineAndOfflineUsers({
       setWs(null);
       setId(null);
       setUsername(null);
-      localStorage.removeItem("token");
+      localStorage.removeItem("token"); // Remove token from localStorage
     });
   }
   return (
