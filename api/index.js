@@ -139,44 +139,47 @@ wss.on("connection", async (connection, req) => {
   connection.on("pong", () => {
     clearTimeout(connection.deathTimer);
   });
+  try {
+    // Handle token verification
+    const cookies = req.headers.cookie;
+    // const authHeader = req.headers.authorization;
 
-  // Handle token verification
-  const cookies = req.headers.cookie;
-  // const authHeader = req.headers.authorization;
+    let token;
+    const queryParams = new URLSearchParams(url.parse(req.url, true).search);
+    token = queryParams.get("token");
 
-  let token;
-  const queryParams = new URLSearchParams(url.parse(req.url, true).search);
-  token = queryParams.get("token");
+    // // Check Authorization header first (for production)
+    // if (authHeader?.startsWith("Bearer ")) {
+    //   token = authHeader.split(" ")[1];
+    // }
+    // Fall back to cookies (for local development)
+    if (!token && cookies) {
+      const tokenCookieString = cookies
+        .split(";")
+        .find((str) => str.trim().startsWith("token="));
+      token = tokenCookieString?.split("=")[1];
+    }
 
-  // // Check Authorization header first (for production)
-  // if (authHeader?.startsWith("Bearer ")) {
-  //   token = authHeader.split(" ")[1];
-  // }
-  // Fall back to cookies (for local development)
-  if (!token && cookies) {
-    const tokenCookieString = cookies
-      .split(";")
-      .find((str) => str.trim().startsWith("token="));
-    token = tokenCookieString?.split("=")[1];
-  }
+    if (token) {
+      try {
+        const userData = await verifyToken(token);
+        console.log("WebSocket user authenticated:", userData.userId);
 
-  if (token) {
-    try {
-      const userData = await verifyToken(token);
-      console.log("WebSocket user authenticated:", userData.userId);
-
-      connection.userId = userData.userId;
-      connection.username = userData.username;
-    } catch (error) {
-      console.error("WebSocket token verification error:", error);
-      connection.close(1008, "Token verification failed"); // WebSocket status code
+        connection.userId = userData.userId;
+        connection.username = userData.username;
+      } catch (error) {
+        console.error("WebSocket token verification error:", error);
+        connection.close(1008, "Token verification failed"); // WebSocket status code
+        return;
+      }
+    } else {
+      connection.close(1008, "No token provided"); // WebSocket status code
       return;
     }
-  } else {
-    connection.close(1008, "No token provided"); // WebSocket status code
+  } catch (err) {
+    ws.close();
     return;
   }
-
   // Initial notification
   notifyOnlineUsers();
 
