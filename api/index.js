@@ -96,7 +96,7 @@ const server = app.listen(process.env.PORT, (req, res) => {
 });
 
 const wss = new ws.WebSocketServer({ server: server });
-const MAX_WS_CONNECTIONS = 100; 
+const MAX_WS_CONNECTIONS = 100;
 wss.on("connection", async (connection, req) => {
   if (wss.clients.size >= MAX_WS_CONNECTIONS) {
     connection.close(1008, "Server overloaded");
@@ -140,16 +140,18 @@ wss.on("connection", async (connection, req) => {
 
   // Handle token verification
   const cookies = req.headers.cookie;
-  const authHeader = req.headers.authorization;
+  // const authHeader = req.headers.authorization;
 
   let token;
+  const queryParams = new URLSearchParams(url.parse(req.url, true).search);
+  token = queryParams.get("token");
 
-  // Check Authorization header first (for production)
-  if (authHeader?.startsWith("Bearer ")) {
-    token = authHeader.split(" ")[1];
-  } 
+  // // Check Authorization header first (for production)
+  // if (authHeader?.startsWith("Bearer ")) {
+  //   token = authHeader.split(" ")[1];
+  // }
   // Fall back to cookies (for local development)
-  else if (cookies) {
+  if (!token && cookies) {
     const tokenCookieString = cookies
       .split(";")
       .find((str) => str.trim().startsWith("token="));
