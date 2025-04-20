@@ -118,7 +118,13 @@ const logOutFUN = (req, res) => {
     .json("successfully logout");
 };
 const profileFUN = asyncHandler(async (req, res) => {
-  const token = req.cookies?.token;
+  let token = req?.cookies?.token;
+
+  // If not found in cookies, check Authorization header (for production)
+  if (!token && req.headers.authorization?.startsWith("Bearer ")) {
+    token = req.headers.authorization.split(" ")[1];
+  }
+
   if (token) {
     const verifyToken = (token) =>
       new Promise((resolve, reject) => {
