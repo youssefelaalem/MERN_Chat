@@ -81,17 +81,23 @@ export default function Chat({ selectedUserIdFromRoute }) {
   useEffect(() => {
     connectionWS();
   }, [selectedUserId]);
+  const retryCountRef = useRef(0);
   function connectionWS() {
     const token = localStorage.getItem("token");
     // const ws = new WebSocket("ws://localhost:8080");
     const ws = new WebSocket("wss://mernchat-production-815e.up.railway.app");
     setWs(ws);
     ws.addEventListener("message", handleMessage);
-    ws.addEventListener("close", () =>
-      setTimeout(() => {
-        connectionWS();
-      }, 800)
-    );
+    ws.addEventListener("close", (e) => {
+      console.log("close", e);
+      retryCountRef.current++;
+      if (retryCountRef.current < 3) {
+        setTimeout(() => {
+          connectionWS();
+        }, 800);
+      }
+    });
+    console.log("test connectionWS", ws);
   }
   function showOnlinePeople(peopleArray) {
     const people = peopleArray.reduce((acc, { userId, username }) => {
