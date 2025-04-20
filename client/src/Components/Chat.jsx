@@ -84,9 +84,7 @@ export default function Chat({ selectedUserIdFromRoute }) {
   function connectionWS() {
     const token = localStorage.getItem("token");
     // const ws = new WebSocket("ws://localhost:8080");
-    const ws = new WebSocket("wss://mernchat-production-815e.up.railway.app", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const ws = new WebSocket("wss://mernchat-production-815e.up.railway.app");
     setWs(ws);
     ws.addEventListener("message", handleMessage);
     ws.addEventListener("close", () =>
